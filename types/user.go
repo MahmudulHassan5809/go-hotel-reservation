@@ -46,7 +46,7 @@ func isEmailValid(e string) bool {
 }
 
 type User struct {
-	ID primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	ID                primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 	FirstName string  `bson:"firstName" json:"firstName"`
 	LastName string  `bson:"lastName" json:"lastName"`
 	Email string  `bson:"email" json:"email"`

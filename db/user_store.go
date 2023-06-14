@@ -16,6 +16,8 @@ type UserStore interface {
 	GetUseById(context.Context, string) (*types.User, error)
 	GetUsers(context.Context) ([]*types.User, error)
 	CreateUser(context.Context, *types.User) (*types.User, error)
+	DeleteUser(context.Context, string) error
+	UpdateUser(context.Context, bson.M, bson.M) error
 }
 
 type MongoUserStore struct {
@@ -30,6 +32,27 @@ func NewMongoUserStore(client *mongo.Client) *MongoUserStore{
 		coll: coll,
 
 	}
+}
+
+func (ms *MongoUserStore) UpdateUser(ctx context.Context, filter, update bson.M) error {
+	_, err := ms.coll.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (ms *MongoUserStore) DeleteUser(ctx context.Context, id string) error {
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+	// TODO: Maybe it is a good idea to handle if we did not delete any use
+	_, err = ms.coll.DeleteOne(ctx, bson.M{"_id": oid})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 
