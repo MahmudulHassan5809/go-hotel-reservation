@@ -15,3 +15,9 @@ func ToObjectID(id string) primitive.ObjectID {
 	}
 	return oid
 }
+
+type Store struct {
+	User UserStore
+	Hotel HotelStore
+	Room RoomStore
+}
