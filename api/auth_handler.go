@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hotel-reservation/db"
 	"hotel-reservation/types"
+	"net/http"
 	"os"
 	"time"
 
@@ -33,6 +34,18 @@ type AuthResponse struct {
 	Token string `json:"token"`
 }
 
+type genericResp struct {
+	Type string `json:"type"`
+	Msg  string `json:"msg"`
+}
+
+func invalidCredentials(c *fiber.Ctx) error {
+	return c.Status(http.StatusBadRequest).JSON(genericResp{
+		Type: "error",
+		Msg:  "invalid credentials",
+	})
+}
+
 func (h *AuthHandler) HandleAuthenticate(ctx *fiber.Ctx) error {
 	var params AuthParams
 	if err := ctx.BodyParser(&params); err != nil {
@@ -42,12 +55,12 @@ func (h *AuthHandler) HandleAuthenticate(ctx *fiber.Ctx) error {
 	user, err := h.userStore.GetUserByEmail(ctx.Context(), params.Email)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return fmt.Errorf("INVALID CREDENTIALS")
+			return invalidCredentials(ctx)
 		}
 		return err
 	}
 	if !types.IsValidPassword(user.Password, params.Password){
-		return fmt.Errorf("INVALID CREDENTIALS")
+		return invalidCredentials(ctx)
 	}
 	resp := AuthResponse{
 		User: user,
@@ -68,7 +81,6 @@ func createTokenFromUser(user *types.User) string {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	secret := os.Getenv("JWT_SECRET")
-	fmt.Println(secret, "--------------")
 	tokenStr, err := token.SignedString([]byte(secret))
 	if err != nil {
 		fmt.Println("failed to sign token with secret", err)
