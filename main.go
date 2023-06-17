@@ -70,7 +70,7 @@ func main() {
     apiV1.Get("/hotels/:id", hotelHandler.HandleGetHotel)
     apiV1.Get("/hotels/:id/rooms", hotelHandler.HandleGetRooms)
 
-    // Rooms Handlers
+    // Rooms Handlers 
     apiV1.Get("/rooms", roomHandler.HandleGetRooms)
     apiV1.Post("/room/:id/book", roomHandler.HandleBookRoom)
 
@@ -79,6 +79,7 @@ func main() {
 
     // Admin routes
     admin.Get("/bookings", bookingHandler.HandleGetBookings)
+    admin.Patch("/bookings/:id/cancelled", bookingHandler.HandleCancelBooking)
     
     app.Listen(*listenAddr)
     
