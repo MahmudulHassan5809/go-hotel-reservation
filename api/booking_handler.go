@@ -2,6 +2,8 @@ package api
 
 import (
 	"hotel-reservation/db"
+	"hotel-reservation/types"
+	"net/http"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
@@ -30,6 +32,16 @@ func (h *BookingHandler) HandleGetBooking(ctx *fiber.Ctx) error {
 	booking, err := h.store.Booking.GetBookingByID(ctx.Context(), id)
 	if err != nil {
 		return err
+	}
+	user, ok := ctx.Context().UserValue("user").(*types.User)
+	if !ok {
+		return err
+	}
+	if booking.UserID != user.ID{
+		return ctx.Status(http.StatusUnauthorized).JSON(genericResp{
+			Type: "error",
+			Msg: "not authorized",
+		})
 	}
 	return ctx.JSON(booking)
 }
