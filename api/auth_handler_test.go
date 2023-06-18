@@ -2,10 +2,9 @@ package api
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
-	"hotel-reservation/db"
-	"hotel-reservation/types"
+	"fmt"
+	"hotel-reservation/db/fixtures"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -15,52 +14,27 @@ import (
 )
 
 
-func makeTestUser(t *testing.T,userStore db.UserStore) *types.User {
-	user, err := types.NewUserFromParams(
-		types.CreateUserParams{
-			FirstName: "Mahmudul",
-			LastName: "Hassan",
-			Email: "mahmudul@gmail.com",
-			Password: "1234567",
-		},
-	)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = userStore.CreateUser(context.TODO(), user)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return user
-}
-
-
 func TestAuthenticateSuccess(t *testing.T) {
 	tdb := setup(t)
-	defer tdb.tearDown(t)
-
-	insertedUser := makeTestUser(t, tdb.UserStore)
+	defer tdb.teardown(t)
+	insertedUser := fixtures.AddUser(tdb.Store, "mahmudul", "hassan", false)
 
 	app := fiber.New()
-	authHandler := NewAuthHandler(tdb.UserStore)
+	authHandler := NewAuthHandler(tdb.User)
 	app.Post("/auth", authHandler.HandleAuthenticate)
 
 	params := AuthParams{
-		Email: "mahmudul@gmail.com",
-		Password: "1234567",
+		Email:    "mahmudul@hassan.com",
+		Password: "12345678",
 	}
 	b, _ := json.Marshal(params)
-	
 	req := httptest.NewRequest("POST", "/auth", bytes.NewReader(b))
 	req.Header.Add("Content-Type", "application/json")
 	resp, err := app.Test(req)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	if resp.StatusCode != http.StatusOK{
+	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected http status of 200 but got %d", resp.StatusCode)
 	}
 
@@ -68,26 +42,29 @@ func TestAuthenticateSuccess(t *testing.T) {
 	if err := json.NewDecoder(resp.Body).Decode(&authResp); err != nil {
 		t.Fatal(err)
 	}
-	
-	if len(authResp.Token) == 0 {
-		t.Fatalf("expected the JWT token in response")
+	if authResp.Token == "" {
+		t.Fatalf("expected the JWT token to be present in the auth response")
 	}
-
+	// Set the encrypted password to an empty string, because we do NOT return that in any
+	// JSON response.
+	
 	insertedUser.Password = ""
-	if !reflect.DeepEqual(insertedUser, authResp.User){
-		t.Fatalf("expected the user to be equal to be the equal inserted user")
+	if !reflect.DeepEqual(insertedUser, authResp.User) {
+		fmt.Println(insertedUser)
+		fmt.Println(authResp.User)
+		t.Fatalf("expected the user to be the inserted user")
 	}
 }
 
 
 func TestAuthenticateWithWrongPassword(t *testing.T) {
 	tdb := setup(t)
-	defer tdb.tearDown(t)
+	defer tdb.teardown(t)
 
-	makeTestUser(t, tdb.UserStore)
+	fixtures.AddUser(tdb.Store, "james", "foo", false)
 
 	app := fiber.New()
-	authHandler := NewAuthHandler(tdb.UserStore)
+	authHandler := NewAuthHandler(tdb.User)
 	app.Post("/auth", authHandler.HandleAuthenticate)
 
 	params := AuthParams{
