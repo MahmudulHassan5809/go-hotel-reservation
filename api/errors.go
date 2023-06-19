@@ -1,6 +1,22 @@
 package api
 
-import "net/http"
+import (
+	"hotel-reservation/middleware"
+	"net/http"
+
+	"github.com/gofiber/fiber/v2"
+)
+
+func ErrorHandler(ctx *fiber.Ctx, err error) error {
+	if apiError, ok := err.(Error); ok {
+		return ctx.Status(apiError.Code).JSON(apiError)
+	}
+	if apiError, ok := err.(middleware.Error); ok {
+		return ctx.Status(apiError.Code).JSON(apiError)
+	}
+	apiError := NewError(http.StatusInternalServerError, err.Error())
+	return ctx.Status(apiError.Code).JSON(apiError)
+}
 
 type Error struct {
 	Code int `json:"code"`
