@@ -7,6 +7,7 @@ import (
 	"hotel-reservation/db"
 	"hotel-reservation/middleware"
 	"log"
+	"net/http"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -17,7 +18,14 @@ import (
 
 var config = fiber.Config{
     ErrorHandler: func(ctx *fiber.Ctx, err error) error {
-        return ctx.JSON(map[string]string{"error": err.Error()})
+        if apiError, ok := err.(api.Error); ok {
+            return ctx.Status(apiError.Code).JSON(apiError)
+        }
+        if apiError, ok := err.(middleware.Error); ok {
+            return ctx.Status(apiError.Code).JSON(apiError)
+        }
+        apiError := api.NewError(http.StatusInternalServerError, err.Error())
+        return ctx.Status(apiError.Code).JSON(apiError)
     },
 }
 

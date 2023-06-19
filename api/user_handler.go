@@ -38,10 +38,10 @@ func (h *UserHandler) HandlePutUser(ctx *fiber.Ctx) error {
 	)
 	oid, err := primitive.ObjectIDFromHex(UserID)
 	if err != nil {
-		return err
+		return ErrInvalidID()
 	}
 	if err := ctx.BodyParser(&params); err != nil {
-		return err
+		return ErrBadRequest()
 	}
 	
 	filter := bson.M{"_id": oid}
@@ -54,7 +54,7 @@ func (h *UserHandler) HandlePutUser(ctx *fiber.Ctx) error {
 func (h *UserHandler) HandlePostUser(ctx *fiber.Ctx) error {
 	var params types.CreateUserParams
 	if err := ctx.BodyParser(&params); err != nil {
-		return err
+		return ErrBadRequest()
 	}
 	if errors := params.Validate(); len(errors) > 0 {
 		return ctx.JSON(errors)
@@ -90,7 +90,7 @@ func (h *UserHandler) HandleGetUser(ctx *fiber.Ctx) error {
 func (h *UserHandler) HandleGetUsers(ctx *fiber.Ctx) error {
 	users, err := h.userStore.GetUsers(ctx.Context())
 	if err != nil {
-		return err
+		return ErrResourceNotFound()
 	}
 	return ctx.JSON(users)
 }
